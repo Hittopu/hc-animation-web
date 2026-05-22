@@ -94,8 +94,8 @@ app.innerHTML = `
 
       <div class="map-panel">
         <div class="map-copy">
-          <p class="panel-kicker">真实铁路网作为直觉入口</p>
-          <h3>中国铁路线路图上，一条线把很多城市串起来</h3>
+          <p class="panel-kicker">公开中国地图作为直觉入口</p>
+          <h3>在真实中国地图上，一条线把很多城市串起来</h3>
           <p>
             真实高铁线不会经过全国每一个点，所以现实里“离高铁站近”的地方可以用最近站代替，
             “离站远”的地方误差就大。这正好对应有限 bit 的 HC：<code>θ</code> 只能取有限个值，
@@ -113,36 +113,10 @@ app.innerHTML = `
 
         <figure class="rail-map">
           <div class="map-stage">
-            <img src="${assetBase}assets/rail-map-china.svg" alt="中国铁路线路图" />
-            <svg class="route-overlay" viewBox="0 0 100 86" preserveAspectRatio="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#e5b862" />
-                  <stop offset="48%" stop-color="#36d99d" />
-                  <stop offset="100%" stop-color="#39c8e8" />
-                </linearGradient>
-              </defs>
-              <path id="trainRoute" class="route-shadow" d="M72 24 C74 34 75 45 77 55 C79 63 82 68 85 71" />
-              <path class="route-line" d="M72 24 C74 34 75 45 77 55 C79 63 82 68 85 71" />
-              <g class="station station-a"><circle cx="72" cy="24" r="1.2" /><text x="73.5" y="23.2">城市 A</text></g>
-              <g class="station station-b"><circle cx="77" cy="55" r="1.2" /><text x="78.5" y="54.2">城市 B</text></g>
-              <g class="station station-c"><circle cx="85" cy="71" r="1.2" /><text x="76.5" y="71.8">城市 C</text></g>
-              <g class="taiwan-mark" transform="translate(91 73) rotate(18)">
-                <path d="M0 0.7 C1.5 -0.2 3.3 0.4 3.9 2.2 C4.7 4.5 4.1 7.6 2.7 9.6 C1.4 11.3 -0.2 10.8 -0.8 8.8 C-1.4 6.4 -1.2 2.4 0 0.7Z" />
-                <path class="taiwan-rail" d="M1.4 1.5 C2.2 3.2 2.3 5.4 1.8 8.2" />
-              </g>
-              <text class="taiwan-label" x="86.4" y="84">台湾省</text>
-              <g class="train-icon">
-                <animateMotion dur="8s" repeatCount="indefinite" rotate="auto">
-                  <mpath href="#trainRoute" />
-                </animateMotion>
-                <rect x="-2.5" y="-1.25" width="5" height="2.5" rx="1.2" />
-                <path d="M2.4 0 L4.2 -1 L4.2 1 Z" />
-              </g>
-            </svg>
+            <div id="china-map-root" class="map-loading">地图加载中...</div>
           </div>
           <figcaption>
-            图源：Wikimedia Commons, Rail map of China.svg。这里叠加的高铁动画是讲解示意，不改变原图比例。
+            地图数据：阿里云 DataV GeoAtlas 公开中国省级边界 GeoJSON，本地缓存绘制。这里叠加的高铁动画是讲解示意。
           </figcaption>
         </figure>
       </div>
@@ -355,9 +329,178 @@ app.innerHTML = `
         <a href="https://ieeexplore.ieee.org/abstract/document/11434864" target="_blank" rel="noreferrer">https://ieeexplore.ieee.org/abstract/document/11434864</a>
       </p>
       <p>
-        Map source: Wikimedia Commons, “Rail map of China.svg,” CC BY-SA 3.0.
-        <a href="https://commons.wikimedia.org/wiki/File:Rail_map_of_China.svg" target="_blank" rel="noreferrer">Source page</a>.
+        Map data source: Aliyun DataV GeoAtlas, public China province GeoJSON, cached locally from
+        <a href="https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json" target="_blank" rel="noreferrer">https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json</a>.
       </p>
     </footer>
   </main>
 `;
+
+const mapRoot = document.querySelector("#china-map-root");
+
+const mapConfig = {
+  width: 1000,
+  height: 760,
+  minVisibleLat: 17,
+  route: [
+    { label: "城市 A", coords: [116.405285, 39.904989], dx: 18, dy: -18 },
+    { label: "城市 B", coords: [114.305392, 30.593099], dx: 18, dy: 4 },
+    { label: "城市 C", coords: [113.121416, 23.021548], dx: -92, dy: 22 }
+  ]
+};
+
+function collectCoordinates(geometry, list = []) {
+  if (!geometry) return list;
+
+  const visit = (coords) => {
+    if (!Array.isArray(coords)) return;
+    if (typeof coords[0] === "number" && typeof coords[1] === "number") {
+      list.push(coords);
+      return;
+    }
+    coords.forEach(visit);
+  };
+
+  visit(geometry.coordinates);
+  return list;
+}
+
+function createProjection(features) {
+  const coordinates = features
+    .flatMap((feature) => collectCoordinates(feature.geometry))
+    .filter((point) => point[1] >= mapConfig.minVisibleLat);
+
+  const minLon = Math.min(...coordinates.map((point) => point[0]));
+  const maxLon = Math.max(...coordinates.map((point) => point[0]));
+  const minLat = Math.min(...coordinates.map((point) => point[1]));
+  const maxLat = Math.max(...coordinates.map((point) => point[1]));
+  const centerLat = (minLat + maxLat) / 2;
+  const lonScale = Math.cos((centerLat * Math.PI) / 180);
+  const minX = minLon * lonScale;
+  const maxX = maxLon * lonScale;
+  const mapWidth = maxX - minX;
+  const mapHeight = maxLat - minLat;
+  const scale = Math.min(mapConfig.width / mapWidth, mapConfig.height / mapHeight) * 0.9;
+  const offsetX = (mapConfig.width - mapWidth * scale) / 2;
+  const offsetY = (mapConfig.height - mapHeight * scale) / 2;
+
+  return ([lon, lat]) => ({
+    x: offsetX + (lon * lonScale - minX) * scale,
+    y: offsetY + (maxLat - lat) * scale
+  });
+}
+
+function pathFromRing(ring, project) {
+  const points = ring
+    .filter((point) => point[1] >= mapConfig.minVisibleLat)
+    .map(project);
+
+  if (points.length < 3) return "";
+
+  const [first, ...rest] = points;
+  const commands = rest.map((point) => `L${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  return `M${first.x.toFixed(1)} ${first.y.toFixed(1)} ${commands} Z`;
+}
+
+function pathFromGeometry(geometry, project) {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map((ring) => pathFromRing(ring, project)).join(" ");
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates
+      .flatMap((polygon) => polygon.map((ring) => pathFromRing(ring, project)))
+      .join(" ");
+  }
+
+  return "";
+}
+
+function buildRoutePath(project) {
+  const [a, b, c] = mapConfig.route.map((station) => project(station.coords));
+  const c1 = { x: a.x + 22, y: a.y + 130 };
+  const c2 = { x: b.x - 60, y: b.y - 74 };
+  const c3 = { x: b.x + 30, y: b.y + 86 };
+  const c4 = { x: c.x - 44, y: c.y - 92 };
+
+  return [
+    `M${a.x.toFixed(1)} ${a.y.toFixed(1)}`,
+    `C${c1.x.toFixed(1)} ${c1.y.toFixed(1)} ${c2.x.toFixed(1)} ${c2.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
+    `C${c3.x.toFixed(1)} ${c3.y.toFixed(1)} ${c4.x.toFixed(1)} ${c4.y.toFixed(1)} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`
+  ].join(" ");
+}
+
+function renderChinaMap(data) {
+  const project = createProjection(data.features);
+  const routePath = buildRoutePath(project);
+  const provincePaths = data.features
+    .map((feature) => {
+      const name = feature.properties?.name || "";
+      const className = name.includes("台湾") ? "map-province is-taiwan" : "map-province";
+      const d = pathFromGeometry(feature.geometry, project);
+      return d ? `<path class="${className}" d="${d}" />` : "";
+    })
+    .join("");
+  const stations = mapConfig.route
+    .map((station) => {
+      const point = project(station.coords);
+      return `
+        <g class="station-marker" transform="translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})">
+          <circle r="9" />
+          <text x="${station.dx}" y="${station.dy}">${station.label}</text>
+        </g>
+      `;
+    })
+    .join("");
+  const taiwan = data.features.find((feature) => feature.properties?.name === "台湾省");
+  const taiwanCenter = taiwan ? project(taiwan.properties.centroid || taiwan.properties.center) : null;
+
+  mapRoot.classList.remove("map-loading");
+  mapRoot.innerHTML = `
+    <svg class="china-map" viewBox="0 0 ${mapConfig.width} ${mapConfig.height}" role="img" aria-label="公开中国省级地图与高铁线路示意">
+      <defs>
+        <linearGradient id="mapRouteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#e5b862" />
+          <stop offset="48%" stop-color="#36d99d" />
+          <stop offset="100%" stop-color="#39c8e8" />
+        </linearGradient>
+        <filter id="routeGlow">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <rect class="map-ocean" x="0" y="0" width="${mapConfig.width}" height="${mapConfig.height}" rx="22" />
+      <g class="province-layer">${provincePaths}</g>
+      <path id="trainRouteMap" class="map-route-shadow" d="${routePath}" />
+      <path class="map-route" d="${routePath}" />
+      ${stations}
+      ${
+        taiwanCenter
+          ? `<text class="map-label taiwan-label-map" x="${(taiwanCenter.x + 24).toFixed(1)}" y="${(taiwanCenter.y + 8).toFixed(1)}">台湾省</text>`
+          : ""
+      }
+      <g class="train-icon-map">
+        <animateMotion dur="8s" repeatCount="indefinite" rotate="auto">
+          <mpath href="#trainRouteMap" />
+        </animateMotion>
+        <rect x="-16" y="-7" width="32" height="14" rx="7" />
+        <path d="M15 0 L26 -7 L26 7 Z" />
+      </g>
+    </svg>
+  `;
+}
+
+async function initChinaMap() {
+  try {
+    const response = await fetch(`${assetBase}data/china.json`);
+    if (!response.ok) throw new Error("Map data request failed");
+    renderChinaMap(await response.json());
+  } catch (error) {
+    mapRoot.textContent = "地图数据暂时没有加载成功";
+  }
+}
+
+initChinaMap();

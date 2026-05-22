@@ -384,89 +384,113 @@ code {
 .map-stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 635.559 / 546.375;
-  padding: 22px;
+  aspect-ratio: 1000 / 760;
+  padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
-  background: rgba(255, 252, 235, 0.82);
+  background:
+    linear-gradient(rgba(7, 25, 22, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 25, 22, 0.035) 1px, transparent 1px),
+    rgba(255, 252, 235, 0.82);
+  background-size: 34px 34px;
   box-shadow: var(--shadow);
   overflow: hidden;
 }
 
-.map-stage img {
-  display: block;
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.china-map {
   position: absolute;
   inset: 22px;
   width: calc(100% - 44px);
   height: calc(100% - 44px);
-  object-fit: contain;
+  overflow: visible;
 }
 
-.route-overlay {
-  position: absolute;
-  inset: 22px;
-  width: calc(100% - 44px);
-  height: calc(100% - 44px);
-  pointer-events: none;
+.map-ocean {
+  fill: rgba(238, 246, 223, 0.36);
+  stroke: rgba(7, 25, 22, 0.08);
 }
 
-.route-shadow {
+.map-province {
+  fill: rgba(246, 239, 211, 0.94);
+  stroke: rgba(7, 25, 22, 0.46);
+  stroke-width: 1.15;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-province:nth-child(4n + 1) {
+  fill: rgba(226, 238, 201, 0.96);
+}
+
+.map-province:nth-child(4n + 2) {
+  fill: rgba(238, 230, 197, 0.96);
+}
+
+.map-province:nth-child(4n + 3) {
+  fill: rgba(218, 235, 217, 0.96);
+}
+
+.map-province.is-taiwan {
+  fill: rgba(245, 219, 170, 0.98);
+  stroke: rgba(7, 25, 22, 0.62);
+}
+
+.map-route-shadow,
+.map-route {
   fill: none;
-  stroke: rgba(7, 25, 22, 0.34);
-  stroke-width: 2.8;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.route-line {
-  fill: none;
-  stroke: url(#routeGradient);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-dasharray: 3 2;
+.map-route-shadow {
+  stroke: rgba(7, 25, 22, 0.35);
+  stroke-width: 12;
 }
 
-.station circle {
+.map-route {
+  stroke: url(#mapRouteGradient);
+  stroke-width: 7;
+  stroke-dasharray: 16 11;
+  filter: url(#routeGlow);
+}
+
+.station-marker circle {
   fill: var(--paper-strong);
   stroke: #0d4b3b;
-  stroke-width: 0.7;
+  stroke-width: 4;
 }
 
-.station text {
+.station-marker text,
+.map-label {
   fill: #071916;
   paint-order: stroke;
   stroke: rgba(255, 252, 235, 0.96);
-  stroke-width: 2.2px;
-  font-size: 2.75px;
+  stroke-width: 7px;
+  font-size: 24px;
   font-weight: 900;
 }
 
-.taiwan-mark path:first-child {
-  fill: rgba(255, 252, 235, 0.95);
-  stroke: #0d4b3b;
-  stroke-width: 0.45;
+.map-label {
+  font-size: 22px;
 }
 
-.taiwan-rail {
-  fill: none;
-  stroke: #d86655;
-  stroke-width: 0.5;
-  stroke-linecap: round;
+.taiwan-label-map {
+  fill: #6b4b1d;
 }
 
-.taiwan-label {
-  fill: #071916;
-  paint-order: stroke;
-  stroke: rgba(255, 252, 235, 0.96);
-  stroke-width: 2.2px;
-  font-size: 2.6px;
-  font-weight: 900;
-}
-
-.train-icon rect,
-.train-icon path {
+.train-icon-map rect,
+.train-icon-map path {
   fill: #d86655;
   stroke: #fffceb;
-  stroke-width: 0.35;
+  stroke-width: 2;
 }
 
 .rail-map figcaption {
@@ -884,24 +908,15 @@ code {
     font-size: 1.9rem;
   }
 
-  .map-stage {
-    padding: 12px;
-  }
-
-  .map-stage img {
+  .china-map {
     inset: 12px;
     width: calc(100% - 24px);
     height: calc(100% - 24px);
   }
 
-  .route-overlay {
-    inset: 12px;
-    width: calc(100% - 24px);
-    height: calc(100% - 24px);
-  }
-
-  .station text {
-    font-size: 4px;
+  .station-marker text,
+  .map-label {
+    font-size: 30px;
   }
 
   .story-grid,
