@@ -236,6 +236,10 @@ code {
   font-size: 1.13rem;
 }
 
+.hero-lead-secondary {
+  margin-top: 14px;
+}
+
 .hero-thesis {
   max-width: 720px;
   margin-top: 34px;
