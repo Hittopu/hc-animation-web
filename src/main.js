@@ -1,6 +1,7 @@
 import "./styles.css";
 
 const app = document.querySelector("#app");
+const assetBase = import.meta.env.BASE_URL;
 
 app.innerHTML = `
   <div class="ambient-grid" aria-hidden="true"></div>
@@ -106,7 +107,7 @@ app.innerHTML = `
 
         <figure class="rail-map">
           <div class="map-stage">
-            <img src="/assets/rail-map-china.svg" alt="中国铁路线路图" />
+            <img src="${assetBase}assets/rail-map-china.svg" alt="中国铁路线路图" />
             <svg class="route-overlay" viewBox="0 0 100 86" preserveAspectRatio="none" aria-hidden="true">
               <defs>
                 <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">

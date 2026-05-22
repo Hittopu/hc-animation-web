@@ -380,6 +380,7 @@ code {
 .map-stage {
   position: relative;
   width: 100%;
+  aspect-ratio: 635.559 / 546.375;
   padding: 22px;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
@@ -390,9 +391,10 @@ code {
 
 .map-stage img {
   display: block;
-  width: 100%;
-  height: auto;
-  max-height: 760px;
+  position: absolute;
+  inset: 22px;
+  width: calc(100% - 44px);
+  height: calc(100% - 44px);
   object-fit: contain;
 }
 
@@ -880,6 +882,12 @@ code {
 
   .map-stage {
     padding: 12px;
+  }
+
+  .map-stage img {
+    inset: 12px;
+    width: calc(100% - 24px);
+    height: calc(100% - 24px);
   }
 
   .route-overlay {
