@@ -11,7 +11,7 @@ app.innerHTML = `
     <a class="brand" href="#top" aria-label="返回顶部">
       <span class="brand-mark">HC</span>
       <span>
-        <strong>Hyper-Compression 教学图</strong>
+        <strong>Hyper-Compression 科普图</strong>
         <small>从中国高铁理解一条线如何压缩模型权重</small>
       </span>
     </a>
